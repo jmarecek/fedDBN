@@ -49,10 +49,9 @@ federation* and breaks it down into the projection's order, incomplete optimisat
 and communication. See `experiments/README.md`. A TMLR-style draft is in `paper/`
 (`cd paper && latexmk -pdf feddbn.tex`).
 
-**Licence.** The ψDAG code (`main.py`, `opt.py`, `utils.py`, `data_generator.py` and the
-notebooks) is © 2024 Klea Ziu under the MIT licence, reproduced in `LICENSE-psiDAG`. The
-fedDBN additions (`feddbn/`, `experiments/`, `paper/`) are under the Apache License 2.0 in
-`LICENSE`.
+**Licence.** MIT (see `LICENSE`). The ψDAG code (`main.py`, `opt.py`, `utils.py`,
+`data_generator.py` and the notebooks) is © 2024 Klea Ziu. The fedDBN additions
+(`feddbn/`, `experiments/`, `paper/`) are © 2026 Jakub Marecek.
 
 ---
 ## BibTeX
