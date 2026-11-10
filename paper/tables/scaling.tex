@@ -1,0 +1,15 @@
+\begin{tabular}{rr rrr rrr rrrr rr}
+\toprule
+ & & \multicolumn{3}{c}{\feddbn, $K{=}1$} & \multicolumn{3}{c}{\feddbn, $K{=}8$} & \multicolumn{4}{c}{\exdbn{}, Gram form} & \multicolumn{2}{c}{\exdbn{}, orig.} \\
+\cmidrule(lr){3-5}\cmidrule(lr){6-8}\cmidrule(lr){9-12}\cmidrule(lr){13-14}
+$d$ & edges & SHD & F1 & time [s] & SHD & F1 & time [s] & SHD & F1 & gap & build [s] & SHD & time [s] \\
+\midrule
+10 & 30 & 7.2 & 0.79 & 0.05 & 8.5 & 0.78 & 0.09 & 2.3 & 0.96 & 0.01 & 0.02 & 2.3 & 125 \\
+25 & 75 & 29.3 & 0.73 & 0.07 & 30.7 & 0.72 & 0.13 & 10.5 & 0.91 & 0.29 & 0.25 & 10.2 & 173 \\
+50 & 153 & 64.3 & 0.70 & 0.12 & 63.2 & 0.71 & 0.22 & 46.3 & 0.78 & 0.39 & 0.81 & 20.0$^\dagger$ & 1205$^\dagger$ \\
+100 & 303 & 124.0 & 0.73 & 0.43 & 117.8 & 0.75 & 0.92 & 301.7 & 0.00 & $\gg 1$ & 4.80 & -- & -- \\
+250 & 771 & 324.5 & 0.73 & 4.65 & 354.2 & 0.72 & 7.80 & 770.0 & 0.00 & $\gg 1$ & 85 & -- & -- \\
+500 & 1500 & 705.0 & 0.71 & 23 & 719.0 & 0.67 & 29 & \multicolumn{4}{c}{not attempted} & -- & -- \\
+1000 & 2983 & 1267.3 & 0.75 & 124 & 1282.5 & 0.76 & 111 & \multicolumn{4}{c}{not attempted} & -- & -- \\
+\bottomrule
+\end{tabular}

@@ -1,0 +1,54 @@
+\section{The price of federation and its decomposition}
+\label{sec:price}
+
+Let $\shd(\cdot)$ be the expected structural Hamming distance of an estimator over a
+distribution of instances. We use \exdbn's convention: unordered pairs, a reversed edge costs
+$\tfrac12$, summed over $W$ and $A_1,\dots,A_p$, all at the SHD-optimal threshold. Let
+$\hat\Theta_K$ be \feddbn{} with $K$ clients and $\hat\Theta^{\mathrm{MIP}}$ be \exdbn{} on
+pooled data, under a given time limit.
+
+\begin{definition}[Price of federation]
+$\mathrm{PoF}(K)=\shd(\hat\Theta_K)-\shd(\hat\Theta^{\mathrm{MIP}})$.
+The relative version divides by the number of true edges.
+\end{definition}
+
+To decompose $\mathrm{PoF}$, let $\mathrm{LS}(\pi)$ be the \emph{exact} least-squares
+minimiser of \eqref{eq:loss} on $\mathcal{S}_\pi$, computed centrally for analysis only. Let
+$\pi^\star$ be a topological order of the true graph and $\hat\pi_K$ the order returned by
+\feddbn{} with $K$ clients. The telescoping sum
+\begin{equation}
+\label{eq:decomp}
+\mathrm{PoF}(K)=
+\underbrace{\shd(\mathrm{LS}(\pi^\star))-\shd(\hat\Theta^{\mathrm{MIP}})}_{\Delta_{\mathrm{est}}:\ \text{estimator}}
++\underbrace{\shd(\mathrm{LS}(\hat\pi_1))-\shd(\mathrm{LS}(\pi^\star))}_{\Delta_{\mathrm{order}}:\ \text{projection's order}}
++\underbrace{\shd(\hat\Theta_1)-\shd(\mathrm{LS}(\hat\pi_1))}_{\Delta_{\mathrm{opt}}:\ \text{incomplete optimisation}}
++\underbrace{\shd(\hat\Theta_K)-\shd(\hat\Theta_1)}_{\Delta_{\mathrm{fed}}(K):\ \text{federation}}
+\end{equation}
+attributes the loss to four sources:
+\begin{itemize}
+\item $\Delta_{\mathrm{est}}$ compares thresholded least squares with the \emph{correct} order
+against the $\ell_0$-penalised MIQP. It is negative when the time limit stops the MIP far
+from optimality, and positive when the $\ell_0$ penalty beats thresholding at selecting edges.
+\item $\Delta_{\mathrm{order}}$ is the cost of the greedy, data-free projection: the error
+that remains when the optimisation \emph{within} the chosen order is exact.
+\item $\Delta_{\mathrm{opt}}$ is the cost of stopping after a finite number of first-order
+steps.
+\item $\Delta_{\mathrm{fed}}(K)$ is the cost of splitting the data and averaging local models.
+It splits further into a change of order,
+$\shd(\mathrm{LS}(\hat\pi_K))-\shd(\mathrm{LS}(\hat\pi_1))$, and a change of
+optimisation error.
+\end{itemize}
+The decomposition holds term by term on every instance, so it also holds for averages.
+
+\paragraph{Communication.}
+Communication delays do not change the iterates of synchronous \feddbn{}, only its
+wall-clock time. With $R$ rounds, one-way latency $\ell$, bandwidth $\beta$ (bytes per second)
+and 8-byte floats,
+\begin{equation}
+  \label{eq:wallclock}
+  T_{\mathrm{wall}}(K)=\sum_{r=1}^{R}\max_k t^{\mathrm{comp}}_{k,r}
+  +E\,t^{\mathrm{proj}}+R\Big(2\ell+\frac{2\cdot 8\,md}{\beta}\Big).
+\end{equation}
+We measure the compute terms and evaluate the communication term for representative
+networks. Delays \emph{do} change the iterates in two cases, which we measure as additional
+SHD: a fixed communication budget, so fewer rounds, and asynchrony with bounded staleness $S$.

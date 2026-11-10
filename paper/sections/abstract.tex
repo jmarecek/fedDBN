@@ -1,0 +1,24 @@
+We study learning linear dynamic Bayesian networks (structural vector autoregressions with an
+acyclic contemporaneous graph) when the time series are distributed over several parties.
+We propose \feddbn, which extends the projected stochastic approximation method \psidag{} to
+lagged effects and to the federated setting. Clients take local accelerated gradient steps,
+and the server averages their models and applies \psidag's order projection, which needs no
+data. We compare \feddbn{} with the exact mixed-integer programming method \exdbn{} on
+\exdbn's own benchmark. To make this a comparison with an exact \emph{federated} competitor,
+we show that the \exdbn{} formulation depends on the data only through the pooled Gram
+matrix, which can be securely aggregated in a single round. We define the \emph{price of
+federation} and decompose it into an estimator term, the projection's topological order,
+incomplete optimisation, federation and communication. On 110 benchmark instances with up
+to 25 variables and 8 clients, the projection's order is by far the largest term (18 SHD on
+average). Incomplete optimisation and the splitting of the data together cost about 2 SHD,
+and communication matters mainly through the number of rounds. For $d\le15$ the exact method
+is clearly better (a price of 27\% of the true edges). For $d\in\{20,25\}$, under \exdbn's
+120\,s budget, \feddbn{} is as accurate while using two orders of magnitude less time.
+With about $7.5\times$ more compute, however, the MIP recovers the true graph on all four
+instances we reran, though without certifying optimality. On instances with up to 1000
+variables, \feddbn's accuracy is stable (SHD about 0.4 of the true edges) and its time
+grows polynomially (about two minutes at $d=1000$). From $d=100$ on, the MIP returns only the
+empty graph within 120\,s, because it cannot solve even its root relaxation. We
+explain why MIP does not scale: the formulation grows quickly, the big-$M$ root relaxation
+is weak, even the root relaxation belongs to a P-complete problem class, and parallel
+branch-and-bound has historically scaled poorly.

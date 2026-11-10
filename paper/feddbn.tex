@@ -1,0 +1,61 @@
+\documentclass[10pt]{article}
+\usepackage{tmlr}
+% For a de-anonymised preprint use: \usepackage[preprint]{tmlr}
+
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{cleveref}
+\setlength{\belowcaptionskip}{4pt}  % tables have captions above
+
+\newtheorem{proposition}{Proposition}
+\newtheorem{definition}{Definition}
+\newtheorem{remark}{Remark}
+
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\shd}{\mathrm{SHD}}
+\newcommand{\psidag}{$\psi$DAG}
+\newcommand{\psidbn}{$\psi$DBN}
+\newcommand{\feddbn}{fedDBN}
+\newcommand{\exdbn}{ExDBN}
+\newcommand{\todo}[1]{\textcolor{red}{[TODO: #1]}}
+
+\title{fedDBN: Federated Learning of Dynamic Bayesian Networks\\and the Price of Federation}
+
+\author{\name Anonymous authors \\ \addr Paper under double-blind review}
+
+\def\month{MM}
+\def\year{YYYY}
+\def\openreview{\url{https://openreview.net/forum?id=XXXX}}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\input{sections/abstract}
+\end{abstract}
+
+\input{sections/introduction}
+\input{sections/background}
+\input{sections/method}
+\input{sections/price}
+\input{sections/mip}
+\input{sections/experiments}
+\input{sections/discussion}
+
+\bibliography{references}
+\bibliographystyle{tmlr}
+
+\appendix
+\crefalias{section}{appendix}
+\input{sections/appendix}
+
+\end{document}

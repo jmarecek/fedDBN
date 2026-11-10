@@ -1,0 +1,2 @@
+method,K,d,n,seed,time_limit,threads,failed,time,build,gap,n_bin,threshold_best,shd_best,f1_best,shd_t0.1,f1_t0.1,n_true_edges
+ExDBN-orig,1,50,1000,0,120,4,False,1205.2142061250001,,0.3517280330545171,,0.13557610652900245,20.0,0.9215017064846417,25.5,0.9,152

@@ -1,0 +1,17 @@
+__pycache__/
+*.pyc
+# cached benchmark instances (regenerate with experiments/gen_data.py and run_scaling.py --part data)
+experiments/data/
+experiments/data_scaling/
+# raw solver outputs (summaries are in experiments/results/*.csv)
+experiments/results/exdbn/
+# LaTeX build products
+paper/*.aux
+paper/*.bbl
+paper/*.blg
+paper/*.log
+paper/*.out
+paper/*.fdb_latexmk
+paper/*.fls
+paper/*.synctex.gz
+.DS_Store

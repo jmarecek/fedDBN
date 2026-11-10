@@ -1,0 +1,71 @@
+\section{Why the MIP does not scale}
+\label{sec:mip}
+
+We give five reasons. They add up: the first two concern the sequential solve, the other three
+concern parallel and federated solves.
+
+\paragraph{1. Size of the formulation.}
+The \exdbn{} MIQP has $d(d-1)+pd^2$ binary indicators, the same number of continuous
+weights, twice as many big-$M$ constraints, and $\binom d2$ two-cycle constraints. The family
+of cycle constraints is exponential: the complete digraph on $d$ nodes has
+$\sum_{k=2}^{d}\binom dk (k-1)!$ simple cycles, so they can only be generated lazily, and each
+incumbent may trigger a separation round. The row-wise objective used by the reference
+implementation has $O(nd\,m^2)$ quadratic terms before aggregation. For $n=1000$ and $p=1$ that is
+about $2.5\cdot 10^8$ terms for $d=50$ and $2\cdot 10^9$ for $d=100$. Building the $d=50$ model took
+18 minutes and 12.3\,GB of memory on our test machine (\cref{sec:exp-scaling}). The $d=100$
+model has eight times as many terms and would exceed its 32\,GB. The Gram form of \cref{prop:gram} removes the factor $n$ but leaves the
+combinatorial core untouched.
+
+\paragraph{2. Worst-case and typical complexity.}
+Score-based structure learning is NP-hard \citep{chickering2004large}, so branch-and-bound
+must be expected to explore exponentially many nodes in the worst case. The typical case is
+also hard here: the big-$M$ relaxation is very weak. With $M=100$ and data-scale weights of
+order one, the relaxation can set $e_{ij}=|w_{ij}|/M\approx 10^{-2}$. This pays a negligible
+fraction of the penalty $\lambda/d$, and it satisfies every cycle inequality
+$\sum_{C}e_{ij}\le|C|-1$ trivially. The root bound is therefore essentially the
+\emph{unconstrained} least-squares loss with no acyclicity and no sparsity, and the gap can
+only be closed by branching. Our experiments show exactly this: the MIP gap at the time limit
+grows quickly with $d$ (\cref{sec:experiments}).
+
+\paragraph{3. Even the root relaxation is inherently sequential.}
+Suppose we gave up exactness and solved only the root node, the continuous relaxation, a
+convex QP that contains linear programming as a special case. Linear programming is
+P-complete under log-space reductions \citep{dobkin1979lp}, and remains P-complete even when
+only an approximate solution is sought \citep{serna1991approximating}. Unless
+$\mathrm{P}=\mathrm{NC}$, that is unless every polynomial-time problem can be solved in
+polylogarithmic time on polynomially many processors (Nick's class), there is no algorithm
+that solves general LPs in polylogarithmic depth \citep{greenlaw1995limits}. Our
+relaxations are a structured subclass, and we do not claim that this particular family is
+P-complete. But no structure that would place it in NC is known, and general-purpose
+solvers treat it as a general LP or QP. In practice, interior-point methods need
+$O(\sqrt{N}\log(1/\varepsilon))$ \emph{sequential} Newton steps, each a sparse factorisation
+that parallelises only moderately. First-order LP methods \citep{applegate2021pdlp}
+parallelise each iteration well, but need a number of iterations that grows with condition
+measures of the instance. By contrast, one iteration of \feddbn{} consists of matrix products,
+which have logarithmic depth, plus averaging, and the number of rounds is a parameter chosen
+in advance. The greedy order projection is sequential in $d$, but it does $O(d^2)$ work, uses
+no data, and runs once per epoch.
+
+\paragraph{4. Parallel branch-and-bound scales poorly in practice.}
+Branch-and-bound looks embarrassingly parallel, yet the empirical record is sobering.
+ParaSCIP \citep{shinano2010parascip} solved two previously open MIPLIB2003 instances with up
+to 2048 cores of the HLRN~II supercomputer. This took about 86 and 114 hours, with 16 and 10
+checkpoint restarts. The ramp-up phase alone grew from roughly 250\,s on 512 cores to 535\,s
+on 2048 cores. The authors note that most earlier parallelisation approaches ``struggled to
+catch up with the performance of state-of-the-art'' sequential solvers, and that many open
+instances were first solved sequentially. They also report that longer ramp-up and ramp-down
+phases with more cores hamper scalability. \citet{koch2012million} discuss the
+obstacles to using $10^6$ cores on a single integer program. These include the ramp-up until
+the tree is large enough to feed all workers, communication and load balancing, and the fact
+that the search, and hence the total work, changes with the degree of parallelism. For a
+broader survey of how parallel high-performance computing and emerging architectures are
+used for mathematical optimisation, including branch-and-bound, see
+\citet{bernalneira2024survey}.
+
+\paragraph{5. Federated branch-and-bound is either centralised or chatty.}
+Every node relaxation depends on all the data. There are two options. Either the server
+receives the pooled sufficient statistic $S$ (\cref{prop:gram}) and runs a centralised
+branch-and-bound, which is subject to reasons 1 to 4. Or every node relaxation is solved
+distributedly, say by ADMM across clients, which costs tens to hundreds of communication
+rounds \emph{per node}, over millions of nodes. \feddbn{} uses a few hundred rounds in
+total.

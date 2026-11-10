@@ -1,0 +1,57 @@
+\section{Introduction}
+\label{sec:intro}
+
+Dynamic Bayesian networks (DBNs) describe multivariate time series by a directed acyclic
+graph (DAG) of contemporaneous (intra-slice) effects together with lagged (inter-slice)
+effects. In the linear case this is a structural vector autoregression,
+\begin{equation}
+  \label{eq:svar}
+  x_t^\top = x_t^\top W + \sum_{k=1}^{p} x_{t-k}^\top A_k + z_t^\top, \qquad t = 1,\dots,n,
+\end{equation}
+where $x_t\in\R^d$, $W\in\R^{d\times d}$ is the weighted adjacency matrix of a DAG,
+$A_1,\dots,A_p\in\R^{d\times d}$ are unconstrained and $z_t$ is noise with independent
+coordinates \citep{pamfil2020dynotears}. Learning $(W, A)$ from data is NP-hard already in
+the static case \citep{chickering2004large}. Two lines of work dominate. \emph{Exact}
+methods based on mixed-integer programming (MIP) certify global optimality of a score and,
+on small instances, recover the true structure essentially perfectly; \exdbn{}
+\citep{rytir2025exdbn} is the state of the art for DBNs. \emph{Continuous} methods such as
+DYNOTEARS \citep{pamfil2020dynotears}, built on NOTEARS \citep{zheng2018notears}, or
+\psidag{} \citep{ziu2024psi} scale to many more variables but come without global guarantees.
+
+In many applications the time series are not held by one party. Hospitals hold the records of
+their own patients, banks hold their own exposures (the credit default swap application of
+\citet{rytir2025exdbn} is of this kind), and pooling the data is ruled out by regulation or
+competition. Federated learning \citep{mcmahan2017fedavg,kairouz2021advances} addresses this
+by exchanging models instead of data. Federated structure learning has been studied for
+static DAGs \citep{ng2022federated,gao2023feddag,li2024fedcdh}, but to our knowledge not for
+DBNs, and the following question has not been quantified: \emph{how much statistical accuracy
+does one give up by learning a DBN in a federated, first-order fashion, rather than by solving
+the exact MIP on pooled data, and what does one gain in scalability?} We call the loss of
+accuracy the \emph{price of federation}.
+
+\paragraph{Contributions.}
+\begin{enumerate}
+  \item We propose \feddbn{} (\cref{sec:method}), an extension of \psidag{} \citep{ziu2024psi}
+  to DBNs (an acyclic intra-slice matrix together with unconstrained lag matrices) and to the
+  federated setting. Clients run local accelerated gradient steps in the spirit of FedAvg. The
+  server averages the models and performs \psidag's order-based projection, which needs no
+  data. Only parameter matrices cross the network.
+  \item We observe that for the linear least-squares score the \exdbn{} MIP depends on the data
+  only through the pooled Gram matrix, so it can itself be federated in a single round of
+  secure aggregation (\cref{prop:gram}). The statistical comparison against \exdbn{} on pooled
+  data is therefore a comparison against the best \emph{exact federated} method, and the
+  reformulation removes the dependence of the MIP model size on $n$.
+  \item We define the price of federation and decompose it into an estimator term, an
+  \emph{ordering} term (the topological order chosen by the projection), an \emph{incomplete
+  optimisation} term and a \emph{federation} term, together with the cost of
+  \emph{communication}: rounds, latency, bandwidth and staleness (\cref{sec:price}).
+  \item We explain why MIP does not scale, sequentially or in parallel
+  (\cref{sec:mip}). Even solving only the root relaxation means solving an instance of
+  a P-complete problem class \citep{dobkin1979lp,serna1991approximating}, which is unlikely to
+  be efficiently parallelisable. The weak big-$M$ relaxation means the root node bound is
+  close to useless. Parallel branch-and-bound has historically scaled poorly
+  \citep{shinano2010parascip,koch2012million,bernalneira2024survey}.
+  \item We measure the price of federation on \exdbn's own benchmark, with \exdbn's generator,
+  parameter grid and evaluation code, and report scalability to $d=1000$ variables
+  (\cref{sec:experiments}).
+\end{enumerate}

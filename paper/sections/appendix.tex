@@ -1,0 +1,53 @@
+\section{Experimental details}
+\label{app:details}
+
+\paragraph{Data.}
+\exdbn{} instances are produced by \exdbn's own \texttt{load\_problem} with
+\texttt{set\_random\_seed(seed)}, exactly as in its \texttt{start\_experiment}. The parameter
+tuples $(p,\ \text{intra edge ratio},\ w^{\min}_{\mathrm{inter}},\ w^{\max}_{\mathrm{inter}},\ \text{noise scale})$
+are ER3-p1 $=(1,3,0.2,0.4,1.0)$, SF3-p1 $=(1,3,0.2,0.4,1.0)$ with a Barab\'asi--Albert
+intra-slice graph, and ER2-p2 $=(2,2,0.3,0.5,1.0)$. Intra-slice weights are uniform on
+$\pm[0.5,2]$ and lag weights decay by a factor $1.1$ per lag. \exdbn's generator rejects
+series whose magnitude exceeds $10^3$ and gives up after 1000 attempts. Where it gives up, the
+instance is skipped, as in \exdbn's own experiment script. This happens for all ER2-p2
+instances with $d\ge 15$ except one (ER2-p2, $d=15$, $n=1000$, seed 3) and for ER3-p1 with
+$d=25$, $n=1000$, seed 0. ER3 graphs with $d=5$ do not exist, since $3d$ edges exceed
+$\binom52$. Of the 150 grid points, 110 instances remain.
+The scaling instances use \psidag's DAG generator (ER, expected degree 4, weights
+$\pm[0.05,1]$) for $W$, \exdbn-style lag matrices ($d$ entries, $|a|\in[0.2,0.4]$), a
+stability rescaling of $A$ so that the reduced-form VAR has spectral radius at most $0.9$,
+$n=\max(1000,4d)$ and a burn-in of 200 steps.
+
+\paragraph{Clients.}
+The rows $(x_t, x_{t-1},\dots,x_{t-p})$ are split into $K$ contiguous, disjoint time windows of
+equal length. Clients are therefore homogeneous in distribution, but each sees only $n/K$
+time points: 31 points per client for $n=250$ and $K=8$.
+
+\paragraph{fedDBN hyperparameters.}
+On the \exdbn{} benchmark: $E=30$ epochs, $R_u=3$, $R_c=10$ (390 rounds), $T=100$ local
+steps, exact local gradients, Nesterov momentum $0.95$, step $1/L_k$, no $\ell_1$ penalty.
+These values were chosen on separate tuning instances (seeds 100--104, ER3-p1 with $d\in\{10,20\}$)
+among a handful of candidates, and then frozen. For scaling: $E=10$, $T=20$ (130 rounds) and
+otherwise the same.
+
+\paragraph{\exdbn{} settings.}
+We use \exdbn's \texttt{solve\_milp.solve} unchanged ($\lambda_1=\lambda_2=0.1$,
+$M=100$, MIP gap $10^{-4}$, lazy constraints for all cycles found in an incumbent) with a
+time limit of 120\,s, as in \exdbn's main experiments, and 2 Gurobi threads per run with
+3--4 runs in parallel. The Gram form (\cref{prop:gram}) uses the same settings. In the
+scaling experiment it uses 4 threads, with two runs in parallel. The budget check of
+\cref{tab:budget} solves its four instances one after another, with 2 or 6 threads.
+Gurobi 12.0.3 ran on an Apple M2 Pro (10 cores, 32\,GB). \feddbn{} uses PyTorch with one
+thread per process, and clients are simulated sequentially. We report the \emph{parallel}
+time: the slowest client per round, plus the server's projections, plus the slowest client's
+setup.
+
+\paragraph{Metrics.}
+We use \exdbn's evaluation code (\texttt{find\_optimal\_threshold\_for\_shd},
+\texttt{count\_accuracy}) on the \exdbn{} benchmark, and an exactly matching vectorised
+re-implementation for $d>25$, where the original pure-Python code is too slow. On the
+scaling instances the oracle threshold is searched over 400 quantiles of the estimated
+$|$weights$|$. F1 is the standard entrywise F1 on the stacked support $[W;A_1;\dots;A_p]$, so a
+reversed edge counts as one false positive and one false negative. \exdbn's SHD charges
+$\tfrac12$ for a reversed pair and, for the lag matrices, compares unordered pairs
+$\{i,j\}$, $i>j$, so self-lag entries are not part of the SHD.

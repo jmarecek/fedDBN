@@ -1,0 +1,55 @@
+\section{Background and related work}
+\label{sec:background}
+
+\paragraph{Linear DBNs.}
+Collect the observations of \eqref{eq:svar} row-wise in $X\in\R^{n\times d}$ and the lagged
+observations in $Y_k\in\R^{n\times d}$, $k=1,\dots,p$. Write
+$Z=[X, Y_1,\dots,Y_p]\in\R^{n\times m}$ with $m=d(p+1)$ and
+$\Theta=[W; A_1;\dots;A_p]\in\R^{m\times d}$. The least-squares score is
+\begin{equation}
+  \label{eq:loss}
+  f(\Theta) = \frac{1}{2n}\,\|X - Z\Theta\|_F^2 ,
+  \qquad \text{subject to } W \in \mathcal{D},\ \operatorname{diag}(W)=0,
+\end{equation}
+where $\mathcal{D}$ is the set of weighted adjacency matrices of DAGs. DYNOTEARS
+\citep{pamfil2020dynotears} replaces $W\in\mathcal{D}$ by the smooth NOTEARS constraint
+$\operatorname{tr} e^{W\circ W}=d$ and adds $\ell_1$ penalties.
+
+\paragraph{ExDBN.}
+\exdbn{} \citep{rytir2025exdbn} solves \eqref{eq:loss} with an $\ell_0$ penalty as a
+mixed-integer quadratic program (MIQP). There is a binary indicator $e_{ij}$ for every entry of $W$
+and $A_k$, and big-$M$ constraints $|w_{ij}|\le M e_{ij}$. The 2-cycle constraints
+$e_{ij}+e_{ji}\le 1$ are stated explicitly. Acyclicity, $\sum_{(i,j)\in C} e_{ij}\le |C|-1$ for
+every directed cycle $C$, is imposed by lazy constraints in branch-and-cut. The objective is
+$\frac1n\|X-Z\Theta\|_F^2+\frac{\lambda}{d}\sum e_{ij}$ with $\lambda=0.1$ and $M=100$. On
+synthetic DBNs with up to $d=25$ variables, \exdbn{} improves markedly on DYNOTEARS, LiNGAM
+and NTS-NOTEARS \citep{rytir2025exdbn}. Earlier integer-programming approaches to (static)
+Bayesian network learning include \citet{bartlett2017integer} and \citet{manzour2021integer}.
+
+\paragraph{\psidag.}
+\psidag{} \citep{ziu2024psi} handles the combinatorial constraint $W\in\mathcal{D}$ by
+alternating stochastic gradient steps with a cheap projection onto the DAGs consistent with
+a topological order. Given an iterate $W$, the projection builds an order greedily from both
+ends: it repeatedly removes either the remaining node with the smallest squared out-norm,
+which becomes the next sink, or the one with the smallest squared in-norm, which becomes the
+next source, and updates the norms. This takes $O(d^2)$ work. All entries that disagree with
+the order are then masked. The optimisation then continues with the mask fixed, for which
+\eqref{eq:loss} is a convex quadratic problem. \psidag{} uses the universal stochastic gradient
+method of \citet{rodomanov2024universal} and was shown to scale to graphs with thousands of
+nodes.
+
+\paragraph{Federated structure learning.}
+NOTEARS-ADMM \citep{ng2022federated} splits the NOTEARS problem across clients by ADMM.
+FedDAG \citep{gao2023feddag} shares only the graph-structure part of local models, and FedCDH
+\citep{li2024fedcdh} handles heterogeneous clients with constraint-based tests. All of these
+learn static DAGs. Federated averaging \citep{mcmahan2017fedavg} with several local steps
+suffers from client drift on heterogeneous data \citep{karimireddy2020scaffold}.
+Asynchronous variants with bounded delays are analysed by \citet{lian2015async}.
+
+\paragraph{Parallel mixed-integer programming.}
+Branch-and-bound parallelises naturally over the nodes of the search tree, yet decades of
+work show limited scalability. Ramp-up and ramp-down phases, load balancing and redundant
+work dominate as the number of cores grows
+\citep{shinano2010parascip,koch2012million}. For a recent survey of how parallel,
+high-performance and emerging architectures are used for mathematical optimisation see
+\citet{bernalneira2024survey}. We return to this in \cref{sec:mip}.

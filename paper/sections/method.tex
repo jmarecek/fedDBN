@@ -1,0 +1,105 @@
+\section{fedDBN}
+\label{sec:method}
+
+\paragraph{Setting.}
+There are $K$ clients. Client $k$ holds $n_k$ rows $(X^{(k)}, Y^{(k)}_1,\dots,Y^{(k)}_p)$ of
+the lagged design, for instance a contiguous window of a common time series or a separate
+realisation of the same process, with $\sum_k n_k=n$. Writing
+$f_k(\Theta)=\frac{1}{2n_k}\|X^{(k)}-Z^{(k)}\Theta\|_F^2$, we have
+$f=\sum_k \frac{n_k}{n} f_k$. Raw data never leave a client.
+
+\paragraph{From \psidag{} to \psidbn.}
+For DBNs only the intra-slice block $W$ is constrained. We therefore apply \psidag's
+projection to the $d\times d$ block $W$ of $\Theta$ and leave the lag blocks
+untouched. Given an order $\pi$, the feasible set is the coordinate subspace
+\[
+  \mathcal{S}_\pi=\{\Theta:\ W_{ij}=0 \text{ unless } \pi^{-1}(i)<\pi^{-1}(j)\},
+\]
+whose indicator we call the \emph{mask} $M_\pi\in\{0,1\}^{m\times d}$. Rows $d+1,\dots,m$ of the
+mask are all ones, so self-lags $A_k[i,i]$ are allowed. Before the first projection the mask
+$M_0$ only removes the diagonal of $W$. We call the centralised method ($K=1$) \psidbn.
+
+\paragraph{Local solver.}
+The ExDBN benchmark is badly conditioned: its weights lie in $[0.5,2]$ and its graphs are dense, so
+variances grow quickly along causal paths. Plain SGD as in \psidag{} converged too slowly
+in our tests. Each client therefore uses Jacobi preconditioning
+$P_k=\operatorname{diag}(Z^{(k)\top}Z^{(k)}/n_k)^{-1}$, a step $\eta_k=1/L_k$ with
+$L_k=\lambda_{\max}(P_k^{1/2} Z^{(k)\top}Z^{(k)} P_k^{1/2}/n_k)$ estimated by power iteration,
+and Nesterov momentum \citep{nesterov1983method} with $\beta=0.95$ that is reset every round.
+Gradients are either exact local gradients, computed from the local Gram matrix in
+$O(m^2 d)$ time independently of $n_k$, or minibatch stochastic gradients as in \psidag.
+Because $M_\pi$ is a coordinate mask and $P_k$ is diagonal, the masked preconditioned step
+is a projected gradient step onto $\mathcal{S}_\pi$.
+
+\begin{algorithm}[t]
+\caption{\feddbn{} (server view). $K=1$ gives centralised \psidbn.}
+\label{alg:feddbn}
+\begin{algorithmic}[1]
+\Require clients $k=1..K$ with local data; epochs $E$; rounds $R_u$ (before projection), $R_c$ (after); local steps $T$
+\State $\Theta\gets 0$, \quad $M\gets M_0$ \Comment{$M_0$: only $\operatorname{diag}(W)=0$}
+\For{$e=1,\dots,E$}
+  \For{$r=1,\dots,R_u$} \quad $\Theta\gets \textsc{Round}(\Theta, M_0)$ \EndFor
+  \State $\pi\gets\textsc{PsiDagOrder}(W(\Theta))$; \quad $M\gets M_\pi$; \quad $\Theta\gets\Theta\circ M$
+     \Comment{data-free, at the server}
+  \For{$r=1,\dots,R_c$} \quad $\Theta\gets \textsc{Round}(\Theta, M)$ \EndFor
+  \State $\ell_e\gets\sum_k \frac{n_k}{n} f_k(\Theta)$ \Comment{one scalar per client}
+  \State keep $(\Theta,\pi)$ if $\ell_e$ is the smallest so far
+\EndFor
+\State \Return best $(W, A_1,\dots,A_p)$, then threshold $|\cdot|$
+\Statex
+\Function{Round}{$\Theta, M$} \Comment{one communication round}
+  \State broadcast $(\Theta, M)$ \Comment{$md$ floats; $M$ is encoded by $\pi$, $d$ integers}
+  \For{each client $k$ \textbf{in parallel}}
+     \State $\Theta_k\gets\Theta$; run $T$ steps of masked, preconditioned Nesterov gradient descent on $f_k$
+  \EndFor
+  \State \Return $\big(\sum_k \frac{n_k}{n}\Theta_k\big)\circ M$ \Comment{$md$ floats from each client}
+\EndFunction
+\end{algorithmic}
+\end{algorithm}
+
+\paragraph{Communication and computation.}
+A round costs $2Kmd$ floats of traffic: the server broadcasts the model and each client
+uploads its local model. The projection costs $O(d^2)$ at the server once per epoch, and each
+client spends $O(T m^2 d)$ per round on exact local gradients, or $O(T b m d)$ with minibatches
+of size $b$. With $E=30$, $R_u=3$, $R_c=10$ and $T=100$, the setting used on the \exdbn{}
+benchmark, a run takes $390$ rounds.
+
+\paragraph{Bounded-delay asynchrony.}
+To model communication delays and stragglers we also run an asynchronous variant. In round
+$r$, client $k$ starts from the model broadcast $s_k\sim\mathcal{U}\{0,\dots,S\}$ rounds
+earlier, together with the mask valid then, as in bounded-delay asynchronous SGD
+\citep{lian2015async}. The server re-applies the current mask after averaging.
+
+\paragraph{Privacy.}
+\feddbn{} shares iterates, as FedAvg does. It shares neither data nor Gram matrices. Formal
+privacy guarantees (differential privacy, secure aggregation of the client updates) are
+orthogonal and left for future work.
+
+\subsection{The exact MIP is federated by sufficient statistics}
+
+\begin{proposition}[ExDBN needs only the pooled Gram matrix]
+\label{prop:gram}
+Let $S=\frac1n Z^\top Z=\sum_k\frac{n_k}{n}S_k$ with $S_k=\frac1{n_k}Z^{(k)\top}Z^{(k)}$, and
+let $c_j$ be the column of $S$ indexed by $x_j$. For every $\Theta$ with columns $\theta_j$,
+\[
+  \frac{1}{n}\|X-Z\Theta\|_F^2=\sum_{j=1}^{d}\big(\theta_j^\top S\,\theta_j-2\,c_j^\top\theta_j+S_{jj}\big).
+\]
+Consequently the \exdbn{} MIQP on pooled data equals the MIQP built from $S$ alone. $S$ can be
+obtained in one round of secure aggregation \citep{bonawitz2017secagg} of the $S_k$, that is
+$O(m^2)$ numbers per client. The resulting model has $O(dm^2)$ quadratic terms instead of the
+$O(ndm^2)$ terms of the row-wise expansion used by the \exdbn{} implementation.
+\end{proposition}
+\begin{proof}
+Expand $\|x_j-Z\theta_j\|^2=x_j^\top x_j-2\theta_j^\top Z^\top x_j+\theta_j^\top Z^\top Z\theta_j$
+and note that $x_j$ is a column of $Z$. The averaging identity follows from
+$Z^\top Z=\sum_k Z^{(k)\top}Z^{(k)}$.
+\end{proof}
+
+We implement this \emph{Gram form} of \exdbn{} with \exdbn's own variables, constraints and
+lazy-cut callback. On small instances it reaches the same optimum as the original code, within
+the $10^{-4}$ MIP gap tolerance. \Cref{prop:gram} matters for two reasons. First, comparing
+\feddbn{} with \exdbn{} on pooled data is a comparison with an \emph{exact federated}
+competitor, not a straw man. Second, the obstacle to an exact federated MIP is the solve,
+not the data. The pooled Gram matrix is the full sufficient statistic of the linear-Gaussian
+model, so a server holding it is statistically as informed as one holding the data, and the
+branch-and-bound solve does not parallelise across clients. We discuss this in \cref{sec:mip}.

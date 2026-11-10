@@ -1,0 +1,54 @@
+\section{Discussion and limitations}
+\label{sec:discussion}
+
+\paragraph{Where the price comes from.}
+The breakdown is unambiguous. Federation in the narrow sense, that is splitting the data
+and averaging local models, costs little: under 2 SHD for $K=8$ on average, and it is
+explained by client drift when clients hold fewer time points than there are regressors.
+Incomplete optimisation is negligible once the order is fixed. Communication delays act
+through the number of rounds, and through staleness at $d=20$. Almost the entire price is
+\emph{combinatorial}: \psidag's greedy, data-free projection picks a suboptimal
+topological order and rarely revises it. With the true order, the same least-squares
+estimator is nearly exact. The question ``how much worse is the federated first-order method
+than the exact MIP?'' therefore reduces, to first order, to ``how good is the projection's
+order?''. Federation is not the issue.
+
+\paragraph{Improving the order.}
+Since the ordering term dominates, the most promising improvements of \feddbn{} target the
+projection. Options include several restarts selected by the federated loss, which is
+embarrassingly parallel and costs one scalar per client per restart; local search over
+adjacent transpositions, scored by clients; and projections that account for the scale of
+the variables. Any of these must keep the projection free of data, or else pay for it in
+communication.
+
+\paragraph{Limitations.}
+(i) All clients are homogeneous in distribution, since they hold windows of one stationary series.
+Heterogeneous clients (different noise levels or mechanisms) cause client drift
+\citep{karimireddy2020scaffold}, and \feddbn{} would then need drift correction.
+(ii) We report the SHD at the oracle threshold, as \exdbn{} does. It favours continuous methods,
+which do not fix the support themselves. We also store SHD at a fixed threshold of $0.1$ in
+the released results.
+(iii) \exdbn{} was run with the 120\,s limit of its main experiments, on two threads.
+\Cref{tab:budget} shows that its accuracy for $d\ge 20$ is very sensitive to this budget. A
+systematic sweep over time limits and threads, and the resulting time to accuracy, is left
+for future work. Its worst-case running time is exponential in any case.
+(iv) \feddbn{} shares iterates. Iterates of a least-squares problem reveal information about
+the clients' Gram matrices, and formal privacy, for example differentially private
+aggregation, is future work.
+(v) We provide no convergence theory for the federated projection scheme. \citet{ziu2024psi}
+analyse the centralised stochastic-approximation iteration. Extending this analysis to local
+steps and bounded delays is open.
+
+\paragraph{Conclusion.}
+We proposed \feddbn, a federated extension of \psidag{} to dynamic Bayesian networks, and
+measured its price of federation against the exact MIP \exdbn{}, which by
+\cref{prop:gram} can itself be federated with one round of secure aggregation. The price
+is real for small models: about 27\% of the true edges for $d\le 15$. Almost all of it is
+due to the greedy order of the projection, not to splitting the data, incomplete
+optimisation or communication delays. For larger models the comparison turns around in
+practice, even though the MIP remains better in principle. With 120\,s per instance the MIP
+is no better than \feddbn{} at $d=20$--$25$. It needs several times more compute to recover
+the true graph there, and from $d=100$ on it cannot solve even its root relaxation. \feddbn{}
+keeps an SHD of about 0.4 of the true edges up to $d=1000$, at a cost that grows polynomially
+and is known in advance. Better data-free projections are the natural next step: they
+target the one term that dominates the price.
